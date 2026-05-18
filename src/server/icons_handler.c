@@ -1,5 +1,3 @@
-// icons_handler.c
-
 #include "icons_handler.h"
 #include "icons_data.h"
 #include "connection.h"

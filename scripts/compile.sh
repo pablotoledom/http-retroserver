@@ -29,7 +29,6 @@ sleep .5
 
 cp ./build/retroserver ./bin/retroserver
 cp -r ./configs ./bin/configs
-cp -r ./ssl ./bin/ssl
 
 source ./scripts/show/divbar
 echo '4- Cleaning build directory...'

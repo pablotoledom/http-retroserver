@@ -42,13 +42,11 @@ int main(int argc, char *argv[]) {
     LOG_INFO("HTTP RetroServer starting");
     LOG_INFO("  Root: %s", resolved);
     LOG_INFO("  HTTP port: %d", http_port);
-    if (ssl_enabled)
-        LOG_INFO("  HTTPS port: %d", https_port);
 
     signal(SIGINT,  handle_signal);
     signal(SIGTERM, handle_signal);
 
-    server_start(resolved, ssl_enabled, ssl_cert, ssl_key, http_port, https_port);
+    server_start(resolved, http_port);
 
     LOG_INFO("Server stopped.");
     return EXIT_SUCCESS;

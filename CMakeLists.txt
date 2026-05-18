@@ -4,8 +4,6 @@ project(retroserver C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -O2")
 
-find_package(OpenSSL REQUIRED)
-
 # --- Embed icons at build time -------------------------------------------
 file(GLOB ICON_GIF_FILES "${CMAKE_SOURCE_DIR}/icons/*.gif")
 
@@ -44,7 +42,6 @@ set(SOURCES
     src/server/request_handler.c
     src/server/static_handler.c
     src/server/icons_handler.c
-    src/server/ssl_manager.c
     src/utils/server_utils.c
     src/utils/config_loader.c
     "${CMAKE_BINARY_DIR}/icons_data.c"
@@ -55,8 +52,4 @@ add_executable(retroserver ${SOURCES})
 
 target_include_directories(retroserver PRIVATE src "${CMAKE_BINARY_DIR}")
 
-target_link_libraries(retroserver
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    pthread
-)
+target_link_libraries(retroserver pthread)

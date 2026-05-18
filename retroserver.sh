@@ -8,7 +8,6 @@ if [ $# -lt 1 ]; then
     echo "  run [dir]      Run the server (default dir: current directory)"
     echo "  install        Install as systemd service"
     echo "  uninstall      Remove systemd service"
-    echo "  cert           Generate a self-signed SSL certificate"
     echo ""
     exit 1
 fi
@@ -37,13 +36,9 @@ while [ $# -gt 0 ]; do
             echo "Uninstalling..."
             sudo ./scripts/uninstall.sh
             ;;
-        cert)
-            echo "Generating local SSL certificate..."
-            ./scripts/create-local-cert.sh
-            ;;
         *)
             echo "Unknown action: $action"
-            echo "Valid actions: compile, compiledebug, run, install, uninstall, cert"
+            echo "Valid actions: compile, compiledebug, run, install, uninstall"
             ;;
     esac
 done

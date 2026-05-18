@@ -4,10 +4,4 @@
 verbose_level=3
 
 # HTTP port
-http_port=80
-
-# HTTPS (optional)
-https_port=8443
-ssl_enabled=1
-ssl_cert=./ssl/cert.pem
-ssl_key=./ssl/key.pem
+http_port=8080

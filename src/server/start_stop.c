@@ -2,34 +2,29 @@
 
 #include "start_stop.h"
 #include "connection_thread.h"
-#include "ssl_manager.h"
 #include "../utils/log.h"
 #include <arpa/inet.h>
 #include <errno.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <sys/select.h>
-#include <time.h>
-#include <signal.h>
 
 #define THREAD_STACK_SIZE (2 * 1024 * 1024)
 
-static int server_fd_http  = -1;
-static int server_fd_https = -1;
-static SSL_CTX *ssl_ctx = NULL;
+static int server_fd = -1;
 static volatile int running = 1;
 
-// --- connection limit ---
 #define MAX_CONNECTIONS 200
 static int active_connections = 0;
 static pthread_mutex_t connection_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// --- rate limiting ---
-#define MAX_IPS     1024
-#define RATE_WINDOW    5
-#define RATE_LIMIT   500
+#define MAX_IPS      1024
+#define RATE_WINDOW     5
+#define RATE_LIMIT    500
 
 typedef struct {
     in_addr_t ip;
@@ -44,10 +39,7 @@ static ip_entry_t ip_table[MAX_IPS];
 int try_register_connection(void) {
     int allowed = 0;
     pthread_mutex_lock(&connection_mutex);
-    if (active_connections < MAX_CONNECTIONS) {
-        active_connections++;
-        allowed = 1;
-    }
+    if (active_connections < MAX_CONNECTIONS) { active_connections++; allowed = 1; }
     pthread_mutex_unlock(&connection_mutex);
     return allowed;
 }
@@ -65,36 +57,24 @@ static int too_many_connections(struct in_addr client_ip) {
     for (int i = 0; i < MAX_IPS; ++i) {
         ip_entry_t *e = &ip_table[i];
         if (e->ip != ip) continue;
-
         if (e->blocked && (now - e->last_rejected) > RATE_WINDOW * 2) {
-            e->blocked = 0;
-            e->count   = 0;
+            e->blocked = 0; e->count = 0;
         }
         if (e->blocked) return 1;
-
         if ((now - e->last_conn) < RATE_WINDOW) {
-            e->count++;
-            e->last_conn = now;
+            e->count++; e->last_conn = now;
             if (e->count > RATE_LIMIT) {
-                e->blocked = 1;
-                e->last_rejected = now;
+                e->blocked = 1; e->last_rejected = now;
                 LOG_WARN("Blocking IP %s for %d seconds", inet_ntoa(client_ip), RATE_WINDOW * 2);
                 return 1;
             }
             return 0;
-        } else {
-            e->count = 1;
-            e->last_conn = now;
-            return 0;
-        }
+        } else { e->count = 1; e->last_conn = now; return 0; }
     }
-
     for (int i = 0; i < MAX_IPS; ++i) {
         if (ip_table[i].ip == 0) {
-            ip_table[i].ip        = ip;
-            ip_table[i].count     = 1;
-            ip_table[i].last_conn = now;
-            ip_table[i].blocked   = 0;
+            ip_table[i].ip = ip; ip_table[i].count = 1;
+            ip_table[i].last_conn = now; ip_table[i].blocked = 0;
             return 0;
         }
     }
@@ -115,120 +95,75 @@ static int make_listen_socket(int port) {
 
     if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         LOG_ERROR("bind() failed on port %d: %s", port, strerror(errno));
-        close(fd);
-        return -1;
+        close(fd); return -1;
     }
     if (listen(fd, 128) < 0) {
         LOG_ERROR("listen() failed: %s", strerror(errno));
-        close(fd);
-        return -1;
+        close(fd); return -1;
     }
     return fd;
 }
 
-static void accept_client(int server_fd, SSL_CTX *ctx, const char *root_dir,
-                           struct sockaddr_in *addr, socklen_t addrlen) {
-    int client = accept(server_fd, (struct sockaddr *)addr, &addrlen);
-    if (client < 0) return;
-
-    if (too_many_connections(addr->sin_addr)) {
-        LOG_WARN("Rate limit: dropping %s", inet_ntoa(addr->sin_addr));
-        close(client);
-        return;
-    }
-    if (!try_register_connection()) {
-        LOG_WARN("Connection limit reached, dropping client");
-        close(client);
-        return;
-    }
-
-#ifdef SO_NOSIGPIPE
-    int val = 1;
-    setsockopt(client, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof(val));
-#endif
-
-    struct thread_args *args = malloc(sizeof(*args));
-    if (!args) {
-        close(client);
-        unregister_connection();
-        return;
-    }
-
-    args->client_socket = client;
-    args->root_directory = root_dir;
-    args->ssl = NULL;
-
-    if (ctx) {
-        args->ssl = SSL_new(ctx);
-        if (!args->ssl) {
-            LOG_ERROR("SSL_new failed");
-            close(client);
-            free(args);
-            unregister_connection();
-            return;
-        }
-        SSL_set_fd(args->ssl, client);
-    }
-
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-
-    pthread_t tid;
-    if (pthread_create(&tid, &attr, connection_thread, args) != 0) {
-        LOG_ERROR("pthread_create failed");
-        if (args->ssl) SSL_free(args->ssl);
-        close(client);
-        free(args);
-        unregister_connection();
-    } else {
-        pthread_detach(tid);
-    }
-    pthread_attr_destroy(&attr);
-}
-
-int server_start(const char *root_dir, int ssl_enabled,
-                 const char *ssl_cert, const char *ssl_key,
-                 int http_port, int https_port) {
+int server_start(const char *root_dir, int http_port) {
     signal(SIGPIPE, SIG_IGN);
     running = 1;
 
-    server_fd_http = make_listen_socket(http_port);
-    if (server_fd_http < 0) return -1;
+    server_fd = make_listen_socket(http_port);
+    if (server_fd < 0) return -1;
     LOG_INFO("HTTP listening on port %d", http_port);
-
-    if (ssl_enabled) {
-        server_fd_https = make_listen_socket(https_port);
-        if (server_fd_https < 0) return -1;
-        ssl_ctx = ssl_create_context(ssl_cert, ssl_key);
-        if (!ssl_ctx) return -1;
-        LOG_INFO("HTTPS listening on port %d", https_port);
-    }
-
-    fd_set readfds;
-    int max_sd = server_fd_http;
-    if (ssl_enabled && server_fd_https > max_sd) max_sd = server_fd_https;
 
     struct sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);
 
     while (running) {
+        fd_set readfds;
         FD_ZERO(&readfds);
-        FD_SET(server_fd_http, &readfds);
-        if (ssl_enabled && server_fd_https >= 0) FD_SET(server_fd_https, &readfds);
+        FD_SET(server_fd, &readfds);
 
-        int activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
+        int activity = select(server_fd + 1, &readfds, NULL, NULL, NULL);
         if (activity < 0) {
             if (errno == EINTR) continue;
             LOG_ERROR("select() error: %s", strerror(errno));
             break;
         }
 
-        if (server_fd_http >= 0 && FD_ISSET(server_fd_http, &readfds))
-            accept_client(server_fd_http, NULL, root_dir, &addr, addrlen);
+        if (!FD_ISSET(server_fd, &readfds)) continue;
 
-        if (ssl_enabled && server_fd_https >= 0 && FD_ISSET(server_fd_https, &readfds))
-            accept_client(server_fd_https, ssl_ctx, root_dir, &addr, addrlen);
+        int client = accept(server_fd, (struct sockaddr *)&addr, &addrlen);
+        if (client < 0) continue;
+
+        if (too_many_connections(addr.sin_addr)) {
+            LOG_WARN("Rate limit: dropping %s", inet_ntoa(addr.sin_addr));
+            close(client); continue;
+        }
+        if (!try_register_connection()) {
+            LOG_WARN("Connection limit reached, dropping client");
+            close(client); continue;
+        }
+
+#ifdef SO_NOSIGPIPE
+        int val = 1;
+        setsockopt(client, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof(val));
+#endif
+
+        struct thread_args *args = malloc(sizeof(*args));
+        if (!args) { close(client); unregister_connection(); continue; }
+
+        args->client_socket  = client;
+        args->root_directory = root_dir;
+
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
+
+        pthread_t tid;
+        if (pthread_create(&tid, &attr, connection_thread, args) != 0) {
+            LOG_ERROR("pthread_create failed");
+            close(client); free(args); unregister_connection();
+        } else {
+            pthread_detach(tid);
+        }
+        pthread_attr_destroy(&attr);
     }
 
     return 0;
@@ -236,7 +171,5 @@ int server_start(const char *root_dir, int ssl_enabled,
 
 void server_stop(void) {
     running = 0;
-    if (server_fd_http  >= 0) { close(server_fd_http);  server_fd_http  = -1; }
-    if (server_fd_https >= 0) { close(server_fd_https); server_fd_https = -1; }
-    if (ssl_ctx) { ssl_free_context(ssl_ctx); ssl_ctx = NULL; }
+    if (server_fd >= 0) { close(server_fd); server_fd = -1; }
 }
