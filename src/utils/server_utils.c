@@ -1,8 +1,11 @@
 // server_utils.c
 
-#define _XOPEN_SOURCE 700
+#ifndef _WIN32
+#  define _XOPEN_SOURCE 700
+#endif
 
 #include "server_utils.h"
+#include "../platform/platform.h"
 #include <string.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -105,7 +108,7 @@ int sanitize_path(const char *url_path, char *safe_path, size_t size, const char
         return 0;
 
     char resolved[PATH_MAX];
-    if (realpath(path, resolved) == NULL)
+    if (plat_realpath(path, resolved) == NULL)
         return 0;
 
     size_t root_len = strlen(root_directory);
@@ -119,16 +122,26 @@ int sanitize_path(const char *url_path, char *safe_path, size_t size, const char
 }
 
 int tmpl_append(char *buf, int buf_size, int off,
-                const char *tmpl,
+                const char *tmpl, int tmpl_len,
                 const char * const *keys,
                 const char * const *vals,
                 int nkeys) {
-    const char *p = tmpl;
-    while (*p && off < buf_size - 1) {
-        if (p[0] == '{' && p[1] == '{') {
-            const char *end = strstr(p + 2, "}}");
-            if (!end) { buf[off++] = *p++; continue; }
-            size_t klen = (size_t)(end - (p + 2));
+    const char *p   = tmpl;
+    const char *end_tmpl = tmpl + tmpl_len;
+
+    while (p < end_tmpl && off < buf_size - 1) {
+        if (p[0] == '{' && p + 1 < end_tmpl && p[1] == '{') {
+            /* find closing }} within remaining template */
+            const char *search_end = end_tmpl - 1; /* need at least 2 chars */
+            const char *found = NULL;
+            const char *q = p + 2;
+            while (q < search_end) {
+                if (q[0] == '}' && q[1] == '}') { found = q; break; }
+                q++;
+            }
+            if (!found) { buf[off++] = *p++; continue; }
+
+            size_t klen = (size_t)(found - (p + 2));
             int replaced = 0;
             for (int i = 0; i < nkeys; i++) {
                 if (strlen(keys[i]) == klen && strncmp(keys[i], p + 2, klen) == 0) {
@@ -140,11 +153,11 @@ int tmpl_append(char *buf, int buf_size, int off,
                 }
             }
             if (!replaced) {
-                const char *q = p;
-                while (q < end + 2 && off < buf_size - 1)
-                    buf[off++] = *q++;
+                const char *r = p;
+                while (r < found + 2 && off < buf_size - 1)
+                    buf[off++] = *r++;
             }
-            p = end + 2;
+            p = found + 2;
         } else {
             buf[off++] = *p++;
         }

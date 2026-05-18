@@ -12,11 +12,12 @@ void html_encode(char *dst, const char *src, size_t dst_size);
 int sanitize_path(const char *url_path, char *safe_path, size_t size, const char *root_directory);
 
 /*
- * Append template tmpl to buf[off..], replacing {{KEY}} tokens with vals[i].
+ * Append template tmpl (tmpl_len bytes) to buf[off..], replacing {{KEY}} tokens.
+ * Uses explicit length — does not rely on null-termination in the template.
  * Returns the new offset. Safe: never writes past buf_size.
  */
 int tmpl_append(char *buf, int buf_size, int off,
-                const char *tmpl,
+                const char *tmpl, int tmpl_len,
                 const char * const *keys,
                 const char * const *vals,
                 int nkeys);

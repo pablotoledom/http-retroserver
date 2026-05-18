@@ -3,11 +3,11 @@
 #ifndef CONNECTION_THREAD_H
 #define CONNECTION_THREAD_H
 
-#include <pthread.h>
+#include "platform/platform.h"
 
 struct thread_args {
-    int client_socket;
-    const char *root_directory;
+    plat_sock_t  client_socket;
+    const char  *root_directory;
 };
 
 void *connection_thread(void *arg);

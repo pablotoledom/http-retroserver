@@ -15,9 +15,5 @@ fi
 
 SERVE_REALPATH="$(realpath "$SERVE_DIR")"
 
-echo "Serving: $SERVE_REALPATH"
-echo "Press Ctrl+C to stop."
-echo ''
-
 cd bin
 ./retroserver "$SERVE_REALPATH"

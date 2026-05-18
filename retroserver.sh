@@ -3,8 +3,10 @@
 if [ $# -lt 1 ]; then
     echo "Use: $0 <action> [args...]"
     echo ""
-    echo "  compile        Build for production (Release)"
-    echo "  compiledebug   Build with debug symbols"
+    echo "  linux          Build for Linux (Release)"
+    echo "  macos          Build for macOS (run this on a Mac)"
+    echo "  win32          Cross-compile for Windows 32-bit (Win95 to Win11)"
+    echo "  debug          Build for Linux with debug symbols"
     echo "  run [dir]      Run the server (default dir: current directory)"
     echo "  install        Install as systemd service"
     echo "  uninstall      Remove systemd service"
@@ -16,12 +18,16 @@ while [ $# -gt 0 ]; do
     action="$1"
     shift
     case "$action" in
-        compile)
-            echo "Compiling for production..."
-            ./scripts/compile.sh
+        linux)
+            ./scripts/compile_linux.sh
             ;;
-        compiledebug)
-            echo "Compiling for debug..."
+        macos)
+            ./scripts/compile_macos.sh
+            ;;
+        win32)
+            ./scripts/compile_win32.sh
+            ;;
+        debug)
             ./scripts/compile_debug.sh
             ;;
         run)
@@ -38,7 +44,7 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             echo "Unknown action: $action"
-            echo "Valid actions: compile, compiledebug, run, install, uninstall"
+            echo "Valid actions: linux, macos, win32, debug, run, install, uninstall"
             ;;
     esac
 done

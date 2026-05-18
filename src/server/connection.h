@@ -3,11 +3,11 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
+#include "platform/platform.h"
 #include <stddef.h>
-#include <sys/types.h>
 
 typedef struct {
-    int client_socket;
+    plat_sock_t client_socket;
 } connection_ctx_t;
 
 ssize_t connection_write(void *ctx, const char *buf, size_t count);
