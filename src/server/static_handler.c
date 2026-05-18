@@ -100,23 +100,25 @@ static void fmt_size(char *buf, size_t buf_size, long long sz) {
 }
 
 static void send_status(void *ctx, int code, const char *status) {
-    char code_str[8];
-    snprintf(code_str, sizeof(code_str), "%d", code);
-    const char *keys[] = { "CODE", "STATUS" };
-    const char *vals[] = { code_str, status };
-    char body[256];
-    int tlen = 0;
-    const char *tmpl = html_get("error.html", &tlen);
-    int blen = tmpl_append(body, sizeof(body), 0, tmpl, tlen, keys, vals, 2);
+    /* HTTP header — no Content-Length, browser reads until close */
     char hdr[256];
     snprintf(hdr, sizeof(hdr),
         "HTTP/1.1 %d %s\r\n"
         "Content-Type: text/html; charset=UTF-8\r\n"
-        "Content-Length: %d\r\n"
         "Connection: close\r\n\r\n",
-        code, status, blen);
+        code, status);
     connection_write(ctx, hdr, strlen(hdr));
-    connection_write(ctx, body, blen);
+
+    /* Body from error.html template */
+    char code_str[8];
+    snprintf(code_str, sizeof(code_str), "%d", code);
+    const char *keys[] = { "CODE", "STATUS" };
+    const char *vals[] = { code_str, status };
+    int tlen = 0;
+    const char *tmpl = html_get("error.html", &tlen);
+    char body[1024];
+    int blen = tmpl_append(body, (int)sizeof(body), 0, tmpl, tlen, keys, vals, 2);
+    if (blen > 0) connection_write(ctx, body, (size_t)blen);
 }
 
 // -----------------------------------------------------------------------
