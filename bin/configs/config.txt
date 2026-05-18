@@ -1,0 +1,13 @@
+# retroserver configuration
+
+# Log level: 0=none, 1=error, 2=warn, 3=info, 4=debug
+verbose_level=3
+
+# HTTP port
+http_port=80
+
+# HTTPS (optional)
+https_port=8443
+ssl_enabled=1
+ssl_cert=./ssl/cert.pem
+ssl_key=./ssl/key.pem

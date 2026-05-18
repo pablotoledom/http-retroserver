@@ -1,0 +1,18 @@
+[Unit]
+Description=HTTP Retroserver — file server
+After=network.target
+
+[Service]
+TimeoutStopSec=10
+KillSignal=SIGTERM
+SendSIGKILL=yes
+ExecStart=/usr/local/bin/retroserver/retroserver /srv/retroserver
+WorkingDirectory=/usr/local/bin/retroserver
+Restart=always
+User=root
+Group=root
+StandardOutput=append:/var/log/retroserver.log
+StandardError=append:/var/log/retroserver.log
+
+[Install]
+WantedBy=multi-user.target
