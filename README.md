@@ -172,6 +172,30 @@ all Windows versions from 95 onward without any additional updates.
 The binary targets the i486 instruction set so it runs on any x86 CPU
 from 486 to modern processors.
 
+## Documentation
+
+### Architecture
+
+| Document | Description |
+|----------|-------------|
+| [01 — Overview](docs/architecture/01-overview.md) | High-level architecture and design goals |
+| [02 — Components](docs/architecture/02-components.md) | Module map and component responsibilities |
+| [03 — Request Lifecycle](docs/architecture/03-request-lifecycle.md) | HTTP request flow from socket to response |
+| [04 — Build and Embedding](docs/architecture/04-build-and-embedding.md) | Build system and asset embedding pipeline |
+| [05 — Decisions](docs/architecture/05-decisions.md) | Architecture decision records (ADRs) |
+
+### Diagrams (PlantUML)
+
+| Diagram | Description |
+|---------|-------------|
+| [01 — Context](docs/architecture/diagrams/01-context.puml) | System context (C4 model) |
+| [02 — Component Layers](docs/architecture/diagrams/02-components-layers.puml) | Layered component view |
+| [03 — Module Dependencies](docs/architecture/diagrams/03-module-dependencies.puml) | Module dependency graph |
+| [04 — Request Sequence](docs/architecture/diagrams/04-request-sequence.puml) | Sequence diagram for a full HTTP request |
+| [05 — Server States](docs/architecture/diagrams/05-server-states.puml) | Server lifecycle state machine |
+| [06 — Build Pipeline](docs/architecture/diagrams/06-build-pipeline.puml) | Asset embedding build pipeline |
+| [07 — Platform Abstraction](docs/architecture/diagrams/07-platform-abstraction.puml) | Cross-platform abstraction layer |
+
 ## Project Structure
 
 ```
@@ -202,6 +226,22 @@ retroserver/
 │   ├── dir_footer.html
 │   └── error.html
 ├── icons/                            # GIF icons 16x16 (embedded at compile time)
+├── docs/
+│   ├── architecture/
+│   │   ├── 01-overview.md            # Architecture overview
+│   │   ├── 02-components.md          # Component architecture
+│   │   ├── 03-request-lifecycle.md   # HTTP request lifecycle
+│   │   ├── 04-build-and-embedding.md # Build system and asset embedding
+│   │   ├── 05-decisions.md           # Architecture decision records
+│   │   └── diagrams/                 # PlantUML source diagrams
+│   │       ├── 01-context.puml
+│   │       ├── 02-components-layers.puml
+│   │       ├── 03-module-dependencies.puml
+│   │       ├── 04-request-sequence.puml
+│   │       ├── 05-server-states.puml
+│   │       ├── 06-build-pipeline.puml
+│   │       └── 07-platform-abstraction.puml
+│   └── images/                       # Screenshots
 ├── cmake/
 │   └── mingw-w64-win95.cmake         # Windows cross-compile toolchain
 ├── configs/

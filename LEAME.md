@@ -173,6 +173,30 @@ versiones de Windows desde 95 sin necesidad de actualizaciones adicionales.
 El binario apunta al conjunto de instrucciones i486, por lo que funciona en
 cualquier CPU x86 desde el 486 hasta los procesadores modernos.
 
+## Documentación
+
+### Arquitectura
+
+| Documento | Descripción |
+|-----------|-------------|
+| [01 — Visión General](docs/architecture/01-overview.md) | Arquitectura de alto nivel y objetivos de diseño |
+| [02 — Componentes](docs/architecture/02-components.md) | Mapa de módulos y responsabilidades de cada componente |
+| [03 — Ciclo de Vida de la Petición](docs/architecture/03-request-lifecycle.md) | Flujo de una petición HTTP desde el socket hasta la respuesta |
+| [04 — Compilación y Embedding](docs/architecture/04-build-and-embedding.md) | Sistema de build y pipeline de embedding de assets |
+| [05 — Decisiones](docs/architecture/05-decisions.md) | Registros de decisiones de arquitectura (ADRs) |
+
+### Diagramas (PlantUML)
+
+| Diagrama | Descripción |
+|----------|-------------|
+| [01 — Contexto](docs/architecture/diagrams/01-context.puml) | Contexto del sistema (modelo C4) |
+| [02 — Capas de Componentes](docs/architecture/diagrams/02-components-layers.puml) | Vista de componentes por capas |
+| [03 — Dependencias de Módulos](docs/architecture/diagrams/03-module-dependencies.puml) | Grafo de dependencias entre módulos |
+| [04 — Secuencia de Petición](docs/architecture/diagrams/04-request-sequence.puml) | Diagrama de secuencia para una petición HTTP completa |
+| [05 — Estados del Servidor](docs/architecture/diagrams/05-server-states.puml) | Máquina de estados del ciclo de vida del servidor |
+| [06 — Pipeline de Compilación](docs/architecture/diagrams/06-build-pipeline.puml) | Pipeline de embedding de assets en el build |
+| [07 — Abstracción de Plataforma](docs/architecture/diagrams/07-platform-abstraction.puml) | Capa de abstracción multiplataforma |
+
 ## Estructura del Proyecto
 
 ```
@@ -203,6 +227,22 @@ retroserver/
 │   ├── dir_footer.html
 │   └── error.html
 ├── icons/                            # Iconos GIF 16x16 (embebidos en tiempo de compilacion)
+├── docs/
+│   ├── architecture/
+│   │   ├── 01-overview.md            # Vision general de la arquitectura
+│   │   ├── 02-components.md          # Arquitectura de componentes
+│   │   ├── 03-request-lifecycle.md   # Ciclo de vida de la peticion HTTP
+│   │   ├── 04-build-and-embedding.md # Sistema de build y embedding de assets
+│   │   ├── 05-decisions.md           # Registros de decisiones de arquitectura
+│   │   └── diagrams/                 # Diagramas fuente PlantUML
+│   │       ├── 01-context.puml
+│   │       ├── 02-components-layers.puml
+│   │       ├── 03-module-dependencies.puml
+│   │       ├── 04-request-sequence.puml
+│   │       ├── 05-server-states.puml
+│   │       ├── 06-build-pipeline.puml
+│   │       └── 07-platform-abstraction.puml
+│   └── images/                       # Capturas de pantalla
 ├── cmake/
 │   └── mingw-w64-win95.cmake         # Toolchain para cross-compilacion Windows
 ├── configs/
