@@ -158,22 +158,22 @@ All error responses use `send_status(ctx, code, status)`:
 Client          start_stop      connection_thread   request_handler   static_handler   Filesystem
   │                │                   │                  │                 │               │
   │── TCP SYN ────►│                   │                  │                 │               │
-  │                │ select() ready     │                  │                 │               │
-  │                │ accept()           │                  │                 │               │
-  │                │ rate_limit_ok?     │                  │                 │               │
-  │                │ conn_limit_ok?     │                  │                 │               │
-  │                │─── spawn ─────────►│                  │                 │               │
-  │                │                   │ set SO_RCVTIMEO   │                 │               │
+  │                │ select() ready    │                  │                 │               │
+  │                │ accept()          │                  │                 │               │
+  │                │ rate_limit_ok?    │                  │                 │               │
+  │                │ conn_limit_ok?    │                  │                 │               │
+  │                │─── spawn ────────►│                  │                 │               │
+  │                │                   │ set SO_RCVTIMEO  │                 │               │
   │── GET /file ──────────────────────►│                  │                 │               │
-  │                │                   │── plain_read() ──►│                 │               │
-  │                │                   │                  │ parse_http_request()             │
+  │                │                   │── plain_read() ─►│                 │               │
+  │                │                   │                  │ parse_http_request()            │
   │                │                   │                  │ url_decode()    │               │
   │                │                   │                  │─── handle_static ──────────────►│
   │                │                   │                  │                 │ check ".."    │
   │                │                   │                  │                 │ realpath()    │
   │                │                   │                  │                 │── open() ────►│
-  │◄── HTTP 200 + body ────────────────────────────────────────────────────│               │
-  │                │                   │ connection_close()│                 │               │
+  │◄── HTTP 200 + body ─────────────────────────────────────────────────────│               │
+  │                │                   │ connection_close()│                │               │
   │                │                   │ unregister_connection()            │               │
-  │                │                   │ thread exits      │                 │               │
+  │                │                   │ thread exits      │                │               │
 ```

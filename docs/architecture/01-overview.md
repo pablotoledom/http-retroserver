@@ -20,14 +20,14 @@ These constraints were explicitly chosen and drive most architectural decisions:
 
 ```
 ┌────────────────────┐         HTTP/TCP          ┌──────────────────────────┐
-│  HTTP Client        │◄─────────────────────────►│   HTTP RetroServer        │
-│  (Browser, Lynx,   │         port 8080          │   (retroserver binary)    │
-│   curl, wget…)     │                            └────────────┬─────────────┘
+│  HTTP Client       │◄─────────────────────────►│   HTTP RetroServer       │
+│  (Browser, Lynx,   │         port 8080         │   (retroserver binary)   │
+│   curl, wget…)     │                           └────────────┬─────────────┘
 └────────────────────┘                                         │ read()
                                                                ▼
                                                   ┌──────────────────────────┐
-                                                  │   Host Filesystem         │
-                                                  │   (served root directory) │
+                                                  │   Host Filesystem        │
+                                                  │   (served root directory)│
                                                   └──────────────────────────┘
 ```
 
@@ -39,14 +39,14 @@ RetroServer follows a **layered architecture** with three horizontal layers:
 
 ```
 ┌──────────────────────────────────────────────────┐
-│                    server/                        │  ← HTTP logic
-│  start_stop · connection_thread · request_handler │
-│  static_handler · icons_handler · http_parser     │
+│                    server/                       │  ← HTTP logic
+│  start_stop · connection_thread · request_handler│
+│  static_handler · icons_handler · http_parser    │
 ├──────────────────────────────────────────────────┤
-│                    utils/                         │  ← Shared utilities
-│       config_loader · server_utils · log          │
+│                    utils/                        │  ← Shared utilities
+│       config_loader · server_utils · log         │
 ├──────────────────────────────────────────────────┤
-│                   platform/                       │  ← OS abstraction
+│                   platform/                      │  ← OS abstraction
 │  platform.h · fs · thread · win95_compat         │
 └──────────────────────────────────────────────────┘
 ```
