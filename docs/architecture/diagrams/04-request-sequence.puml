@@ -1,0 +1,126 @@
+@startuml 04-request-sequence
+skinparam backgroundColor #1a1a1a
+skinparam defaultFontColor #cccccc
+skinparam sequenceArrowColor #66aa66
+skinparam sequenceLifeLineBorderColor #555555
+skinparam sequenceLifeLineBackgroundColor #2a2a2a
+skinparam sequenceParticipantBackgroundColor #2a2a2a
+skinparam sequenceParticipantBorderColor #666666
+skinparam sequenceParticipantFontColor #aaffaa
+skinparam sequenceGroupBorderColor #555555
+skinparam sequenceGroupBodyBackgroundColor #222222
+skinparam noteBorderColor #555555
+skinparam noteBackgroundColor #2a2a2a
+skinparam titleFontColor #aaffaa
+
+title HTTP Request Lifecycle — Thread-per-Connection Model
+
+participant "Client\n(Browser)" as C
+participant "start_stop\n(main thread)" as SS
+participant "connection_thread\n(worker thread)" as CT
+participant "request_handler" as RH
+participant "static_handler /\nicons_handler" as SH
+participant "Filesystem" as FS
+
+== Server Startup ==
+[-> SS : server_start(root, port)
+SS -> SS : make_listen_socket(port)\nbind() + listen(128)
+
+== Accept Loop ==
+loop while running
+    SS -> SS : select(server_fd)\n[blocks waiting for connection]
+    C -> SS : TCP SYN (connect)
+    SS -> SS : accept() → client_sock
+
+    alt rate limit exceeded (>500 req/5s)
+        SS -> C : close socket (silent drop)
+    else connection cap reached (≥200)
+        SS -> C : close socket (silent drop)
+    else accepted
+        SS -> CT : plat_thread_spawn(connection_thread, {client_sock, root})
+        note right of SS : Main thread immediately\nreturns to select()
+    end
+end
+
+== Worker Thread ==
+CT -> CT : allocate connection_ctx_t
+CT -> CT : set SO_RCVTIMEO = 10s\nset SO_SNDTIMEO = 10s
+CT -> RH : request_handler(plain_read, conn, root)
+
+== Request Parsing ==
+RH -> CT : plain_read() [loop until \\r\\n\\r\\n]
+CT --> RH : raw bytes (≤ 16 KB)
+RH -> RH : parse_http_request()
+
+alt parse error
+    RH -> C : HTTP 400 Bad Request
+else method not GET or HEAD
+    RH -> C : HTTP 405 Method Not Allowed\nAllow: GET, HEAD
+else valid GET/HEAD
+    RH -> RH : url_decode(path)
+    RH -> RH : extract ?dl flag
+
+    == Routing ==
+    alt path starts with /_icons/
+        RH -> SH : serve_icon(ctx, icon_name)
+        SH -> SH : lookup in icons_data[]
+        alt icon found
+            SH -> C : HTTP 200 + image/gif + bytes
+        else
+            SH -> C : HTTP 404 Not Found
+        end
+    else static file/directory
+        RH -> SH : handle_static_file_or_directory(ctx, root, path, force_dl)
+
+        == Security Checks ==
+        alt path contains ".."
+            SH -> C : HTTP 403 Forbidden
+        else
+            SH -> SH : plat_realpath(candidate)\nverify prefix == root_dir
+            alt path escapes root (symlink attack)
+                SH -> C : HTTP 403 Forbidden
+            else
+                == File vs Directory ==
+                SH -> FS : stat() or FindFirstFile()
+                alt not found
+                    SH -> C : HTTP 404 Not Found
+                else is directory, no trailing /
+                    SH -> C : HTTP 301 Moved Permanently\nLocation: <path>/
+                else is directory
+                    SH -> FS : fs_opendir() + fs_readdir()
+                    FS --> SH : DirEntry[] (≤ 8192 entries)
+                    SH -> SH : qsort (dirs first, then alpha)
+                    SH -> C : HTTP 200 OK\nContent-Type: text/html\nConnection: close
+                    SH -> C : [stream] dir_header.html ({{PATH}} substituted)
+                    loop per entry
+                        SH -> C : [stream] <tr> row
+                    end
+                    SH -> C : [stream] dir_footer.html
+                else is file
+                    SH -> FS : open() / CreateFile()
+                    FS --> SH : file descriptor
+                    SH -> SH : get_mime_type(path)
+                    alt force_download
+                        SH -> C : HTTP 200 OK\nContent-Type: application/octet-stream\nContent-Disposition: attachment
+                    else
+                        SH -> C : HTTP 200 OK\nContent-Type: <mime>\nContent-Length: <size>
+                    end
+                    loop 4 KB chunks
+                        SH -> FS : read() / ReadFile()
+                        FS --> SH : chunk
+                        SH -> C : [stream] chunk
+                    end
+                    SH -> FS : close()
+                end
+            end
+        end
+    end
+end
+
+== Cleanup ==
+CT -> CT : connection_close(conn)
+CT -> CT : free(conn), free(args)
+CT -> SS : unregister_connection()\n[active_connections--]
+CT -> CT : thread exits
+
+@enduml

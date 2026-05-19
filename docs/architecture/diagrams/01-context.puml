@@ -1,0 +1,20 @@
+@startuml 01-context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title System Context — HTTP RetroServer
+
+Person(user, "End User", "Uses a web browser, Lynx, curl,\nor any HTTP/1.x client")
+
+System(retroserver, "HTTP RetroServer", "Lightweight static file server written in C.\nSelf-contained single binary.\nServes files and directory listings over HTTP.")
+
+System_Ext(filesystem, "Host Filesystem", "Local directory tree served\nas the document root")
+
+System_Ext(systemd, "systemd (Linux only)", "Manages the server process\nas a background service")
+
+Rel(user, retroserver, "HTTP GET / HEAD", "TCP port 8080 (configurable)")
+Rel(retroserver, filesystem, "Reads files and directories", "POSIX open/read/stat\nor Win32 CreateFile/FindFirstFile")
+Rel(systemd, retroserver, "Starts / stops / restarts", "SIGTERM / SIGINT")
+
+@enduml

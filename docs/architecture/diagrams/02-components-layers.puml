@@ -1,0 +1,76 @@
+@startuml 02-components-layers
+skinparam backgroundColor #1a1a1a
+skinparam defaultFontColor #cccccc
+skinparam packageBackgroundColor #2a2a2a
+skinparam packageBorderColor #555555
+skinparam componentBackgroundColor #333333
+skinparam componentBorderColor #666666
+skinparam componentFontColor #aaffaa
+skinparam arrowColor #888888
+skinparam titleFontColor #aaffaa
+skinparam legendBackgroundColor #2a2a2a
+
+title Component Layers — HTTP RetroServer
+
+package "Entry Point" <<node>> {
+    [main.c]
+}
+
+package "server/ — HTTP Logic" {
+    [start_stop.c] as ss
+    [connection_thread.c] as ct
+    [connection.c] as cn
+    [http_request_parser.c] as rp
+    [request_handler.c] as rh
+    [static_handler.c] as sh
+    [icons_handler.c] as ih
+}
+
+package "utils/ — Shared Utilities" {
+    [config_loader.c] as cl
+    [server_utils.c] as su
+    [log.h] as lg
+}
+
+package "platform/ — OS Abstraction" {
+    [platform.h] as ph
+    [fs_posix.c / fs_win32.c] as fs
+    [thread_posix.c / thread_win32.c] as th
+    [win95_compat.c] as w95
+}
+
+package "Generated Assets (compile-time)" <<database>> {
+    [icons_data.c/h] as id
+    [html_data.c/h] as hd
+    [banner_data.c/h] as bd
+}
+
+[main.c] --> ss
+[main.c] --> cl
+[main.c] --> ph
+[main.c] --> bd
+
+ss --> ct
+ss --> th
+ct --> cn
+ct --> rh
+rh --> rp
+rh --> sh
+rh --> ih
+sh --> fs
+sh --> su
+sh --> hd
+ih --> id
+
+ss --> lg
+ct --> lg
+rh --> lg
+sh --> lg
+
+note bottom of "Generated Assets (compile-time)"
+  Produced by gen_icons_c.sh,
+  gen_html_c.sh, gen_banner_c.sh
+  during cmake build
+end note
+
+@enduml

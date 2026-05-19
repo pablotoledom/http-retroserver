@@ -1,0 +1,96 @@
+@startuml 03-module-dependencies
+skinparam backgroundColor #1a1a1a
+skinparam defaultFontColor #cccccc
+skinparam componentBackgroundColor #2a2a2a
+skinparam componentBorderColor #555555
+skinparam componentFontColor #aaffaa
+skinparam arrowColor #66aa66
+skinparam titleFontColor #aaffaa
+skinparam noteBackgroundColor #2a2a2a
+skinparam noteBorderColor #555555
+
+title Module Include Dependencies — HTTP RetroServer
+
+' ── Entry point ──────────────────────────────────────────────
+component "main.c" as MAIN
+
+' ── Server layer ─────────────────────────────────────────────
+component "start_stop.c" as SS
+component "connection_thread.c" as CT
+component "connection.c" as CN
+component "http_request_parser.c" as RP
+component "request_handler.c" as RH
+component "static_handler.c" as SH
+component "icons_handler.c" as IH
+
+' ── Utils layer ──────────────────────────────────────────────
+component "config_loader.c" as CL
+component "server_utils.c" as SU
+component "log.h" as LOG
+
+' ── Platform layer ───────────────────────────────────────────
+component "platform.h" as PH
+component "fs_posix.c\nfs_win32.c" as FS
+component "thread_posix.c\nthread_win32.c" as TH
+
+' ── Generated assets ─────────────────────────────────────────
+component "icons_data.h" as ID #445544
+component "html_data.h" as HD #445544
+component "banner_data.h" as BD #445544
+
+' ── Dependencies (arrows = #include) ─────────────────────────
+MAIN --> PH
+MAIN --> CL
+MAIN --> SS
+MAIN --> BD
+MAIN --> LOG
+
+SS --> CT
+SS --> TH
+SS --> PH
+SS --> LOG
+
+CT --> CN
+CT --> RH
+CT --> PH
+CT --> LOG
+
+RH --> RP
+RH --> SH
+RH --> IH
+RH --> CN
+RH --> SU
+RH --> LOG
+
+SH --> CN
+SH --> SU
+SH --> PH
+SH --> FS
+SH --> HD
+SH --> LOG
+
+IH --> CN
+IH --> ID
+
+CL --> LOG
+SU --> LOG
+
+FS --> PH
+TH --> PH
+
+note right of ID
+  Generated at build time
+  by gen_icons_c.sh
+end note
+
+note right of HD
+  Generated at build time
+  by gen_html_c.sh
+end note
+
+note right of BD
+  Generated at build time
+  by gen_banner_c.sh
+end note
+
+@enduml

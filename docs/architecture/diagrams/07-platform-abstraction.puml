@@ -1,0 +1,137 @@
+@startuml 07-platform-abstraction
+skinparam backgroundColor #1a1a1a
+skinparam defaultFontColor #cccccc
+skinparam classBackgroundColor #2a2a2a
+skinparam classBorderColor #555555
+skinparam classFontColor #aaffaa
+skinparam classAttributeFontColor #cccccc
+skinparam classStereotypeFontColor #888888
+skinparam arrowColor #66aa66
+skinparam noteBackgroundColor #2a2a2a
+skinparam noteBorderColor #555555
+skinparam titleFontColor #aaffaa
+skinparam packageBackgroundColor #222222
+skinparam packageBorderColor #444444
+
+title Platform Abstraction Layer — HTTP RetroServer
+
+' ─── Socket / OS API interface ────────────────────────────────────────────
+interface "Platform API\n<<platform.h>>" as PLAT {
+    + plat_init() : int
+    + plat_cleanup() : void
+    + plat_realpath(path, out) : char*
+    + plat_localtime(time_t*, tm*) : tm*
+    + plat_send(sock, buf, n) : ssize_t
+    + plat_recv(sock, buf, n) : ssize_t
+    + plat_sock_close(sock) : void
+    + PLAT_INVALID_SOCK : constant
+    + SIGPIPE_IGNORE() : macro
+    ..Type aliases..
+    + plat_sock_t : int (POSIX) | SOCKET (Win32)
+}
+
+' ─── Filesystem interface ─────────────────────────────────────────────────
+interface "Filesystem API\n<<fs.h>>" as FS_API {
+    + fs_opendir(path) : fs_dir_t*
+    + fs_readdir(dir, entry) : int
+    + fs_closedir(dir) : void
+    ..Structures..
+    + fs_dir_t
+    + fs_entry_t { name, is_dir, size, mtime }
+}
+
+' ─── Threading interface ──────────────────────────────────────────────────
+interface "Threading API\n<<thread.h>>" as TH_API {
+    + plat_thread_spawn(fn, arg, stack_size) : int
+    + plat_mutex_init(mutex) : void
+    + plat_mutex_lock(mutex) : void
+    + plat_mutex_unlock(mutex) : void
+    ..Type aliases..
+    + plat_mutex_t : pthread_mutex_t | CRITICAL_SECTION
+}
+
+' ─── POSIX implementations ───────────────────────────────────────────────
+package "POSIX (Linux + macOS)" <<cloud>> {
+    class "platform.h\n[POSIX branch]" as PLAT_POSIX {
+        plat_sock_t = int
+        plat_init()   → no-op (returns 0)
+        plat_cleanup() → no-op
+        plat_realpath() → realpath(3)
+        plat_localtime() → localtime_r(3)
+        plat_send()  → send(..., MSG_NOSIGNAL)
+        plat_recv()  → recv(3)
+        SIGPIPE_IGNORE() → signal(SIGPIPE, SIG_IGN)
+    }
+
+    class "fs_posix.c" as FS_POSIX {
+        fs_opendir()  → opendir(3)
+        fs_readdir()  → readdir(3)
+        fs_closedir() → closedir(3)
+    }
+
+    class "thread_posix.c" as TH_POSIX {
+        plat_thread_spawn() → pthread_create (detached)
+        plat_mutex_*()      → pthread_mutex_*
+    }
+}
+
+' ─── Windows implementations ─────────────────────────────────────────────
+package "Windows (Win95–Win11)" <<cloud>> {
+    class "platform.h\n[Win32 branch]" as PLAT_WIN32 {
+        plat_sock_t = SOCKET
+        plat_init()    → WSAStartup(1.1 or 2.2)
+        plat_cleanup() → WSACleanup()
+        plat_realpath() → _fullpath()
+        plat_localtime() → localtime() [Win95]\n               or localtime_s() [Win98+]
+        plat_send()   → send(Win32)
+        plat_recv()   → recv(Win32)
+        SIGPIPE_IGNORE() → (no-op, no SIGPIPE on Windows)
+    }
+
+    class "fs_win32.c" as FS_WIN32 {
+        fs_opendir()  → FindFirstFile()
+        fs_readdir()  → FindNextFile()\n  (filters "." and "..")
+        fs_closedir() → FindClose()
+    }
+
+    class "thread_win32.c" as TH_WIN32 {
+        plat_thread_spawn() → CreateThread()
+        plat_mutex_*()      → InitializeCriticalSection()\n  EnterCriticalSection()\n  LeaveCriticalSection()
+    }
+
+    class "win95_compat.c" as WIN95 {
+        Overrides mainCRTStartup\nto avoid i686 CRT code paths\nthat crash on i486 CPUs
+    }
+}
+
+' ─── Relationships ────────────────────────────────────────────────────────
+PLAT <|.. PLAT_POSIX : implements
+PLAT <|.. PLAT_WIN32 : implements
+
+FS_API <|.. FS_POSIX : implements
+FS_API <|.. FS_WIN32 : implements
+
+TH_API <|.. TH_POSIX : implements
+TH_API <|.. TH_WIN32 : implements
+
+WIN95 .. PLAT_WIN32 : companion\n(Win95 target only)
+
+note bottom of WIN95
+    Compiled only when PLAT_WIN95
+    is defined. Replaces the
+    default CRT entry point.
+end note
+
+note top of "POSIX (Linux + macOS)"
+    Selected by CMake when
+    NOT WIN32
+end note
+
+note top of "Windows (Win95–Win11)"
+    Selected by CMake when
+    WIN32 is defined.
+    PLAT_WIN95 further selects
+    WinSock 1.1 vs 2.
+end note
+
+@enduml

@@ -1,7 +1,0 @@
-# HTTP RetroServer configuration
-
-# Log level: 0=none, 1=error, 2=warn, 3=info, 4=debug
-verbose_level=0
-
-# HTTP port
-http_port=8080

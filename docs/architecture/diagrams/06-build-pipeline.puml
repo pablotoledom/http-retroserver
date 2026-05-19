@@ -1,0 +1,91 @@
+@startuml 06-build-pipeline
+skinparam backgroundColor #1a1a1a
+skinparam defaultFontColor #cccccc
+skinparam activityBackgroundColor #2a2a2a
+skinparam activityBorderColor #555555
+skinparam activityFontColor #aaffaa
+skinparam activityArrowColor #66aa66
+skinparam activityStartColor #aaffaa
+skinparam activityEndColor #aaffaa
+skinparam activityDiamondBackgroundColor #333333
+skinparam activityDiamondBorderColor #666666
+skinparam activityDiamondFontColor #cccccc
+skinparam noteBackgroundColor #2a2a2a
+skinparam noteBorderColor #555555
+skinparam partitionBackgroundColor #222222
+skinparam partitionBorderColor #444444
+skinparam titleFontColor #aaffaa
+
+title Build Pipeline — HTTP RetroServer (CMake)
+
+start
+
+:retroserver.sh <target>;
+note right: target = linux | macos | win32 | debug
+
+if (target == win32?) then (yes)
+    :Select toolchain file\ncmake/mingw-w64-win95.cmake\nor mingw-w64-32/64.cmake;
+    note right
+        Sets PLAT_WIN95 flag
+        for Windows 95 builds
+    end note
+else (no)
+    :Use native host compiler\n(GCC / Clang);
+endif
+
+:cmake -S . -B build/ [-DCMAKE_TOOLCHAIN_FILE=...];
+
+fork
+    partition "Icon Embedding" {
+        :Detect changes in icons/*.gif\n(CMake DEPENDS);
+        :gen_icons_c.sh icons/ → icons_data.c + icons_data.h;
+        note right
+            Each .gif encoded as
+            unsigned char[] array
+            + lookup table by filename
+        end note
+    }
+fork again
+    partition "HTML Embedding" {
+        :Detect changes in html/*.html\n(CMake DEPENDS);
+        :gen_html_c.sh html/ → html_data.c + html_data.h;
+        note right
+            dir_header.html, dir_footer.html,
+            error.html as C strings
+            + html_get(name) accessor
+        end note
+    }
+fork again
+    partition "Banner Embedding" {
+        :Detect changes in scripts/show/welcome\n(CMake DEPENDS);
+        :gen_banner_c.sh welcome → banner_data.c + banner_data.h;
+        note right
+            ASCII art stored as
+            const char BANNER[]
+        end note
+    }
+end fork
+
+:Compile all sources\n(src/main.c, server/*.c, utils/*.c,\nplatform/*.c, generated *.c);
+
+if (target == win32 with PLAT_WIN95?) then (yes)
+    :Link with wsock32 (dynamic)\nMinGW i486 flags;
+
+    :Post-link: run patch_win32\nScan PE binary for CMOVcc opcodes (0F 4x)\nReplace with Jcc + MOV sequences;
+    note right
+        Ensures compatibility with
+        i486/Pentium CPUs that
+        do not support CMOVcc
+    end note
+else if (target == win32 without WIN95?) then (yes)
+    :Static link with ws2_32\n(-static flag);
+else (Linux / macOS)
+    :Link with pthread\nDynamic system libc;
+endif
+
+:Copy binary to output directory\n(bin-linux/ | bin-macos/ | bin-win32/);
+:Copy configs/ alongside binary;
+
+stop
+
+@enduml

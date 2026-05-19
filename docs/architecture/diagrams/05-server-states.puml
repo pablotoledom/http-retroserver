@@ -1,0 +1,82 @@
+@startuml 05-server-states
+skinparam backgroundColor #1a1a1a
+skinparam defaultFontColor #cccccc
+skinparam state {
+    BackgroundColor #2a2a2a
+    BorderColor #555555
+    FontColor #aaffaa
+    ArrowColor #66aa66
+    StartColor #aaffaa
+    EndColor #aaffaa
+}
+skinparam noteBackgroundColor #2a2a2a
+skinparam noteBorderColor #555555
+skinparam titleFontColor #aaffaa
+
+title Server Lifecycle State Machine
+
+[*] --> INIT : process starts
+
+INIT : plat_init() — WinSock setup on Windows\nNo-op on POSIX
+
+INIT --> CONFIGURING : plat_init() == 0
+INIT --> [*] : plat_init() failed
+
+CONFIGURING : load_config("configs/config.txt")\nResolve root directory with plat_realpath()\nRegister SIGINT / SIGTERM handlers
+
+CONFIGURING --> LISTENING : server_start(root, port)
+CONFIGURING --> [*] : invalid root directory
+
+LISTENING : make_listen_socket(port)\nbind() + listen(128)\nrunning = 1
+
+LISTENING --> ACCEPTING : listen socket ready
+LISTENING --> STOPPED : SIGINT / SIGTERM received\n(running = 0, close server_fd)
+
+ACCEPTING : select(server_fd) — blocking wait\nfor next incoming TCP connection
+
+ACCEPTING --> RATE_LIMITED : too_many_connections(ip)\n> 500 req in 5 s window
+ACCEPTING --> CAP_REACHED : active_connections >= 200
+ACCEPTING --> SPAWNING : connection accepted\nall checks passed
+ACCEPTING --> STOPPED : select() interrupted (EINTR)\nor running == 0
+
+RATE_LIMITED : close client socket silently\nIP remains blocked for 2×RATE_WINDOW (10 s)
+
+RATE_LIMITED --> ACCEPTING : back to select()
+
+CAP_REACHED : close client socket silently\nLog: "Connection limit reached"
+
+CAP_REACHED --> ACCEPTING : back to select()
+
+SPAWNING : plat_thread_spawn(connection_thread, args)\nThread is detached — main loop does NOT join it
+
+SPAWNING --> ACCEPTING : back to select() immediately
+
+state "Worker Thread" as THREAD {
+    [*] --> THREAD_INIT
+    THREAD_INIT : allocate connection_ctx_t\nset SO_RCVTIMEO / SO_SNDTIMEO = 10 s
+    THREAD_INIT --> HANDLING : request_handler()
+    HANDLING : read request → parse → route → respond
+    HANDLING --> THREAD_CLEANUP : response sent\nor socket error / timeout
+    THREAD_CLEANUP : connection_close()\nunregister_connection()\nfree resources
+    THREAD_CLEANUP --> [*] : thread exits
+}
+
+SPAWNING --> THREAD : new OS thread
+
+STOPPED : running = 0\nServer socket closed\nNo new connections accepted
+STOPPED --> [*] : plat_cleanup()\nprocess exits
+
+note right of RATE_LIMITED
+  Per-IP tracking in ip_table[1024]:
+  count > RATE_LIMIT (500) in
+  RATE_WINDOW (5 s) → blocked
+  Auto-unblocked after 10 s
+end note
+
+note right of CAP_REACHED
+  Global mutex protects
+  active_connections counter
+  MAX_CONNECTIONS = 200
+end note
+
+@enduml
