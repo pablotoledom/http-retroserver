@@ -4,6 +4,9 @@
 
 Servidor HTTP de archivos estáticos ligero, escrito en C. Diseñado para máxima compatibilidad retro — el listado de directorios funciona en navegadores tan antiguos como Internet Explorer 3.0 y Lynx, con una estética de terminal fósforo verde. Corre en Linux, macOS y Windows 95 hasta Windows 11.
 
+
+![alt Running on Windows 95](https://raw.githubusercontent.com/pablotoledom/http-retroserver/main/docs/images/condensed-example.jpg)
+
 ---
 
 ## Características
@@ -222,5 +225,5 @@ retroserver/
 
 ## Autor
 
-**Jonathan P. Toledo**  
+**Jonathan Pablo Toledo M.**  
 [TheRetroCenter.com](https://www.theretrocenter.com)

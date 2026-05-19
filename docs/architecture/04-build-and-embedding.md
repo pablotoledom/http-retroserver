@@ -136,3 +136,15 @@ No `icons/` or `html/` directories are needed at runtime.
 - Calls `systemctl daemon-reload && systemctl enable retroserver`
 
 `retroserver.sh uninstall` reverses these steps.
+
+## Related Documents
+
+- [01-overview.md](01-overview.md) — Architecture overview
+- [02-components.md](02-components.md) — Module breakdown and internal dependencies
+- [03-request-lifecycle.md](03-request-lifecycle.md) — Full HTTP request flow
+- [05-decisions.md](05-decisions.md) — Architecture Decision Records
+
+## Author
+
+**Jonathan Pablo Toledo M.**  
+[TheRetroCenter.com](https://www.theretrocenter.com)

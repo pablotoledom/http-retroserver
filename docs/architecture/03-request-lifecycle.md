@@ -177,3 +177,15 @@ Client          start_stop      connection_thread   request_handler   static_han
   │                │                   │ unregister_connection()            │               │
   │                │                   │ thread exits      │                │               │
 ```
+
+## Related Documents
+
+- [01-overview.md](01-overview.md) — Architecture overview
+- [02-components.md](02-components.md) — Module breakdown and internal dependencies
+- [04-build-and-embedding.md](04-build-and-embedding.md) — Build system and asset embedding
+- [05-decisions.md](05-decisions.md) — Architecture Decision Records
+
+## Author
+
+**Jonathan Pablo Toledo M.**  
+[TheRetroCenter.com](https://www.theretrocenter.com)

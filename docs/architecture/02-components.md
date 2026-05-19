@@ -107,3 +107,15 @@ main.c
 ```
 
 All layers depend on `utils/log.h` (header-only macros, no link dependency).
+
+## Related Documents
+
+- [01-overview.md](01-overview.md) — Architecture overview
+- [03-request-lifecycle.md](03-request-lifecycle.md) — Full HTTP request flow
+- [04-build-and-embedding.md](04-build-and-embedding.md) — Build system and asset embedding
+- [05-decisions.md](05-decisions.md) — Architecture Decision Records
+
+## Author
+
+**Jonathan Pablo Toledo M.**  
+[TheRetroCenter.com](https://www.theretrocenter.com)

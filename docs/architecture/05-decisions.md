@@ -110,3 +110,15 @@ After linking, run `scripts/patch_win32.c` as a binary post-processor to scan th
 - (+) The standard MinGW-w64 toolchain available in most Linux package managers can be used.
 - (–) The patch is a brittle binary rewriter; if the compiler ever emits `CMOVcc` in a context the patcher does not recognize, the patched binary could be incorrect.
 - (–) Adds a post-link step that must be kept in sync with the compiler's output format.
+
+## Related Documents
+
+- [01-overview.md](01-overview.md) — Architecture overview
+- [02-components.md](02-components.md) — Module breakdown and internal dependencies
+- [03-request-lifecycle.md](03-request-lifecycle.md) — Full HTTP request flow
+- [04-build-and-embedding.md](04-build-and-embedding.md) — Build system and asset embedding
+
+## Author
+
+**Jonathan Pablo Toledo M.**  
+[TheRetroCenter.com](https://www.theretrocenter.com)

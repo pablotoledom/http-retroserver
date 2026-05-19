@@ -23,8 +23,8 @@ These constraints were explicitly chosen and drive most architectural decisions:
 │  HTTP Client       │◄─────────────────────────►│   HTTP RetroServer       │
 │  (Browser, Lynx,   │         port 8080         │   (retroserver binary)   │
 │   curl, wget…)     │                           └────────────┬─────────────┘
-└────────────────────┘                                         │ read()
-                                                               ▼
+└────────────────────┘                                        │ read()
+                                                              ▼
                                                   ┌──────────────────────────┐
                                                   │   Host Filesystem        │
                                                   │   (served root directory)│
@@ -92,3 +92,8 @@ Dependencies flow strictly **downward**: `server/` depends on `utils/` and `plat
 - [03-request-lifecycle.md](03-request-lifecycle.md) — Full HTTP request flow
 - [04-build-and-embedding.md](04-build-and-embedding.md) — Build system and asset embedding
 - [05-decisions.md](05-decisions.md) — Architecture Decision Records
+
+## Author
+
+**Jonathan Pablo Toledo M.**  
+[TheRetroCenter.com](https://www.theretrocenter.com)
