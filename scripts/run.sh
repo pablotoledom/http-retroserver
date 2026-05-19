@@ -8,12 +8,12 @@ if [ ! -d "$SERVE_DIR" ]; then
 fi
 
 # Make sure the binary exists
-if [ ! -f "./bin/retroserver" ]; then
-    echo "Binary not found. Run 'compiledebug' or 'compile' first."
+if [ ! -f "./bin-linux/retroserver" ]; then
+    echo "Binary not found. Run './retroserver.sh linux' first."
     exit 1
 fi
 
 SERVE_REALPATH="$(realpath "$SERVE_DIR")"
 
-cd bin
+cd bin-linux
 ./retroserver "$SERVE_REALPATH"

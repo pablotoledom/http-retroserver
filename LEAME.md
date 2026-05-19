@@ -2,7 +2,7 @@
 
 > [English Version](README.md)
 
-Servidor HTTP de archivos estáticos ligero, escrito en C. Diseñado para máxima compatibilidad retro — el listado de directorios funciona en navegadores tan antiguos como Internet Explorer 3.0 y Lynx, con una estética de terminal fósforo verde. Corre en Linux, macOS y Windows 98+.
+Servidor HTTP de archivos estáticos ligero, escrito en C. Diseñado para máxima compatibilidad retro — el listado de directorios funciona en navegadores tan antiguos como Internet Explorer 3.0 y Lynx, con una estética de terminal fósforo verde. Corre en Linux, macOS y Windows 95 hasta Windows 11.
 
 ---
 
@@ -18,12 +18,12 @@ Servidor HTTP de archivos estáticos ligero, escrito en C. Diseñado para máxim
 - Instalable como servicio systemd (Linux)
 - **Retro compatible:** probado hasta IE 3.0, Netscape 4 y Lynx
 - **UI fósforo verde:** fondo negro, estilo terminal verde
-- **Binario autocontenido:** iconos y templates HTML se embeben en tiempo de compilación — no se necesitan archivos adicionales en producción
-- **Multiplataforma:** Linux, macOS, Windows 98+ (sin dependencias externas)
+- **Binario autocontenido:** iconos, templates HTML y banner de inicio se embeben en tiempo de compilación — no se necesitan archivos adicionales en producción
+- **Multiplataforma:** Linux, macOS, Windows 95+ (sin dependencias externas)
 
 ## Requisitos
 
-- GCC, Clang o MinGW
+- GCC o Clang
 - CMake 3.10+
 
 No se requieren librerías externas.
@@ -35,30 +35,29 @@ sudo apt install build-essential cmake
 # macOS
 brew install cmake
 
-# Windows — instalar MinGW-w64 y CMake
+# Cross-compilar para Windows desde Linux
+sudo apt install build-essential cmake mingw-w64
 ```
 
 ## Compilación
 
-### Linux / macOS
-
 ```bash
-# Build de producción
-./retroserver.sh compile
+# Linux  ->  bin-linux/retroserver
+./retroserver.sh linux
 
-# Build de debug
-./retroserver.sh compiledebug
+# macOS  ->  bin-macos/retroserver   (ejecutar en una Mac)
+./retroserver.sh macos
+
+# Windows 95 a Win11 (32-bit)  ->  bin-win32/retroserver.exe
+./retroserver.sh win32
+
+# Linux con simbolos de debug
+./retroserver.sh debug
 ```
 
-### Windows (MinGW)
-
-```bash
-mkdir build && cd build
-cmake -G "MinGW Makefiles" ..
-cmake --build .
-```
-
-El binario queda en `bin/retroserver` (o `bin/retroserver.exe` en Windows) junto con `configs/`. Los iconos y templates HTML se compilan directamente dentro del binario — no se necesitan carpetas adicionales en runtime.
+Cada plataforma genera su propio directorio de salida junto con `configs/`.
+Los iconos, templates HTML y el banner de inicio se compilan directamente
+dentro del binario — no se necesitan carpetas adicionales en runtime.
 
 ## Uso
 
@@ -86,13 +85,19 @@ Editar `configs/config.txt`:
 
 ```ini
 # Nivel de log: 0=ninguno 1=error 2=warn 3=info 4=debug
-verbose_level=3
+verbose_level=1
 
 # Puerto HTTP
 http_port=8080
 ```
 
 ## Personalizar la UI
+
+### Banner de inicio
+
+El arte ASCII que se muestra al iniciar proviene de `scripts/show/welcome`.
+Editar ese archivo y recompilar — el banner se embebe automáticamente en el
+binario mediante `scripts/gen_banner_c.sh` durante la compilación.
 
 ### Templates HTML
 
@@ -108,7 +113,7 @@ En tiempo de compilación, estos archivos se embeben automáticamente en el bina
 
 ### Iconos
 
-Los iconos son imágenes GIF de 16×16 en `icons/`. Para personalizar:
+Los iconos son imágenes GIF de 16x16 en `icons/`. Para personalizar:
 
 1. Reemplazar cualquier `.gif` en `icons/` por una imagen propia
 2. Recompilar — CMake detecta el cambio y re-embebe todo
@@ -125,9 +130,10 @@ Los iconos son imágenes GIF de 16×16 en `icons/`. Para personalizar:
 | `[PROG]` | exe, bin |
 | `[TEXT]` | txt, md, log, csv, rtf |
 | `[CODE]` | c, h, cpp, py, sh, js, json, html, xml, go, rs, yaml |
-| `[FILE]` | Todo lo demás |
+| `[FILE]` | Todo lo demas |
 
-> En navegadores de texto como Lynx, estas etiquetas se muestran en lugar de los iconos, con padding fijo para alinear las columnas.
+> En navegadores de texto como Lynx, estas etiquetas se muestran en lugar
+> de los iconos, con padding fijo para alinear las columnas.
 
 ## Servicio Systemd (Linux)
 
@@ -141,23 +147,28 @@ sudo ./retroserver.sh uninstall
 
 ## Comandos Disponibles
 
-| Comando        | Descripción                                  |
-|----------------|----------------------------------------------|
-| `compile`      | Compilar para producción (Release)           |
-| `compiledebug` | Compilar con símbolos de debug               |
-| `run [dir]`    | Iniciar el servidor (por defecto: `.`)       |
-| `install`      | Instalar como servicio systemd               |
-| `uninstall`    | Eliminar el servicio systemd                 |
+| Comando      | Descripcion                                    | Destino            |
+|--------------|------------------------------------------------|--------------------|
+| `linux`      | Compilar para Linux (Release)                  | `bin-linux/`       |
+| `macos`      | Compilar para macOS (ejecutar en Mac)          | `bin-macos/`       |
+| `win32`      | Cross-compilar para Windows 95 a Win11         | `bin-win32/`       |
+| `debug`      | Linux con simbolos de debug                    | `bin-linux/`       |
+| `run [dir]`  | Iniciar el servidor (por defecto: directorio actual) |               |
+| `install`    | Instalar como servicio systemd                 |                    |
+| `uninstall`  | Eliminar el servicio systemd                   |                    |
 
-## Notas de Compatibilidad por Plataforma
+## Compatibilidad por Plataforma
 
-| Plataforma | Compilador | Versión mínima |
-|------------|------------|----------------|
-| Linux | GCC / Clang | Cualquier moderna |
+| Plataforma | Compilador | Versiones compatibles |
+|------------|------------|-----------------------|
+| Linux | GCC / Clang | Cualquier distribucion moderna |
 | macOS | Clang / GCC | 10.9+ |
-| Windows | MinGW-w64 | Windows 98 (requiere WinSock2) |
+| Windows | MinGW-w64 (cross desde Linux) | Windows 95 a Windows 11 |
 
-Windows 95 es compatible si se instala la actualización de WinSock2. Windows 98 y versiones posteriores la incluyen por defecto.
+El build de Windows usa WinSock 1.1 (`wsock32.dll`), presente en todas las
+versiones de Windows desde 95 sin necesidad de actualizaciones adicionales.
+El binario apunta al conjunto de instrucciones i486, por lo que funciona en
+cualquier CPU x86 desde el 486 hasta los procesadores modernos.
 
 ## Estructura del Proyecto
 
@@ -165,17 +176,16 @@ Windows 95 es compatible si se instala la actualización de WinSock2. Windows 98
 retroserver/
 ├── src/
 │   ├── main.c
-│   ├── platform/                     # Capa de abstracción multiplataforma
-│   │   ├── platform.h                # Detección de OS, tipos de socket, helpers inline
-│   │   ├── fs.h                      # API de filesystem
-│   │   ├── fs_posix.c                # opendir/stat (Linux + macOS)
-│   │   ├── fs_win32.c                # FindFirstFile (Windows)
-│   │   ├── thread.h                  # API de threads/mutex
-│   │   ├── thread_posix.c            # pthreads
-│   │   └── thread_win32.c            # CreateThread + CRITICAL_SECTION
+│   ├── platform/                     # Capa de abstraccion multiplataforma
+│   │   ├── platform.h                # Deteccion de OS, tipos de socket, helpers
+│   │   ├── fs.h / fs_posix.c         # API de filesystem (Linux + macOS)
+│   │   ├── fs_win32.c                # API de filesystem (Windows)
+│   │   ├── thread.h / thread_posix.c # API de threads (pthreads)
+│   │   ├── thread_win32.c            # API de threads (Win32)
+│   │   └── win95_compat.c            # Overrides de inicio para Win95 (i486-safe)
 │   ├── server/
 │   │   ├── start_stop.c              # Ciclo de vida del servidor
-│   │   ├── connection.c              # Abstracción de lectura/escritura de socket
+│   │   ├── connection.c              # Abstraccion de lectura/escritura de socket
 │   │   ├── connection_thread.c       # Manejador de conexiones por hilo
 │   │   ├── http_request_parser.c
 │   │   ├── request_handler.c         # Enrutamiento de peticiones
@@ -185,18 +195,27 @@ retroserver/
 │       ├── config_loader.c
 │       ├── server_utils.c            # Tipos MIME, URL encode/decode, motor de templates
 │       └── log.h
-├── html/                             # Templates HTML (embebidos en tiempo de compilación)
+├── html/                             # Templates HTML (embebidos en tiempo de compilacion)
 │   ├── dir_header.html
 │   ├── dir_footer.html
 │   └── error.html
-├── icons/                            # Iconos GIF 16×16 (embebidos en tiempo de compilación)
+├── icons/                            # Iconos GIF 16x16 (embebidos en tiempo de compilacion)
+├── cmake/
+│   └── mingw-w64-win95.cmake         # Toolchain para cross-compilacion Windows
 ├── configs/
 │   └── config.txt
 ├── scripts/
+│   ├── compile_linux.sh
+│   ├── compile_macos.sh
+│   ├── compile_win32.sh
+│   ├── compile_debug.sh
+│   ├── patch_win32.c                 # Reemplaza instrucciones CMOVcc (i686) por i486
 │   ├── gen_icons_c.sh                # Embebe iconos en C (ejecutado por CMake)
 │   ├── gen_html_c.sh                 # Embebe HTML en C (ejecutado por CMake)
-│   └── ...
-└── retroserver.sh                    # Punto de entrada principal (Linux/macOS)
+│   ├── gen_banner_c.sh               # Embebe banner de inicio en C (ejecutado por CMake)
+│   └── show/
+│       └── welcome                   # Fuente del arte ASCII del banner
+└── retroserver.sh                    # Punto de entrada principal
 ```
 
 ---
