@@ -8,7 +8,8 @@ if [ $# -lt 1 ]; then
     echo "  win32          Cross-compile for Windows 32-bit (Win95 to Win11)"
     echo "  debug          Build for Linux with debug symbols"
     echo "  run [dir]      Run the server (default dir: current directory)"
-    echo "  install        Install as systemd service"
+    echo "  install-service Install as systemd service"
+    echo "  install-global Install binary globally (retroserver available from anywhere)"
     echo "  uninstall      Remove systemd service"
     echo ""
     exit 1
@@ -34,9 +35,13 @@ while [ $# -gt 0 ]; do
             ./scripts/run.sh "$1"
             shift
             ;;
-        install)
+        install-service)
             echo "Installing..."
-            sudo ./scripts/install.sh
+            sudo ./scripts/install_service.sh
+            ;;
+        install-global)
+            echo "Installing globally..."
+            sudo ./scripts/install_global.sh
             ;;
         uninstall)
             echo "Uninstalling..."
@@ -44,7 +49,7 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             echo "Unknown action: $action"
-            echo "Valid actions: linux, macos, win32, debug, run, install, uninstall"
+            echo "Valid actions: linux, macos, win32, debug, run, install-service, install-global, uninstall"
             ;;
     esac
 done

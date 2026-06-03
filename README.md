@@ -141,7 +141,7 @@ Icons are 16x16 GIF images in `icons/`. To customize:
 
 ```bash
 # Install as a service
-sudo ./retroserver.sh install
+sudo ./retroserver.sh install-service
 
 # Remove the service
 sudo ./retroserver.sh uninstall
@@ -149,15 +149,16 @@ sudo ./retroserver.sh uninstall
 
 ## Available Commands
 
-| Command      | Description                                  | Output             |
-|--------------|----------------------------------------------|--------------------|
-| `linux`      | Build for Linux (Release)                    | `bin-linux/`       |
-| `macos`      | Build for macOS (run on a Mac)               | `bin-macos/`       |
-| `win32`      | Cross-compile for Windows 95 to Win11        | `bin-win32/`       |
-| `debug`      | Linux build with debug symbols               | `bin-linux/`       |
-| `run [dir]`  | Run the server (default: current directory)  |                    |
-| `install`    | Install as a systemd service                 |                    |
-| `uninstall`  | Remove the systemd service                   |                    |
+| Command          | Description                                        | Output             |
+|------------------|----------------------------------------------------|--------------------|
+| `linux`          | Build for Linux (Release)                          | `bin-linux/`       |
+| `macos`          | Build for macOS (run on a Mac)                     | `bin-macos/`       |
+| `win32`          | Cross-compile for Windows 95 to Win11              | `bin-win32/`       |
+| `debug`          | Linux build with debug symbols                     | `bin-linux/`       |
+| `run [dir]`      | Run the server (default: current directory)        |                    |
+| `install-service`| Install as a systemd service                       |                    |
+| `install-global` | Install binary globally (`retroserver` in `$PATH`) |                    |
+| `uninstall`      | Remove the systemd service                         |                    |
 
 ## Cross-Platform Notes
 
@@ -251,6 +252,8 @@ retroserver/
 │   ├── compile_macos.sh
 │   ├── compile_win32.sh
 │   ├── compile_debug.sh
+│   ├── install_service.sh            # Install as systemd service
+│   ├── install_global.sh             # Install binary globally into $PATH
 │   ├── patch_win32.c                 # Replaces CMOVcc (i686) instructions for i486
 │   ├── gen_icons_c.sh                # Embeds icons into C source (run by CMake)
 │   ├── gen_html_c.sh                 # Embeds HTML into C source (run by CMake)
